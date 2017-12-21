@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Configuration status="INFO">
+	<Appenders>
+		<Console name="Console_appender" target="SYSTEM_OUT">
+			<PatternLayout pattern="%d{HH:mm:ss} - %msg%n" />
+		</Console>
+		<RandomAccessFile name="exception_appender" fileName="logs/exceptionLogFile.log" append="true">
+			<PatternLayout pattern="%d{HH:mm:ss:SSS} [%t] %-5level - %msg%n" />
+		</RandomAccessFile>
+		<RandomAccessFile name="analyse_appender" fileName="logs/analyseLogFile.log" append="false">
+			<PatternLayout pattern="%d{HH:mm:ss:SSS} [%t] %-5level - %msg%n" />
+		</RandomAccessFile>
+		<RandomAccessFile name="crawler_appender" fileName="logs/webCrawlerFile.log" append="false">
+			<PatternLayout pattern="%d{HH:mm:ss:SSS} [%t] %-5level - %msg%n" />
+		</RandomAccessFile>
+	</Appenders>
+	<Loggers>
+		<logger name="analyseLogger" level="DEBUG">
+			<AppenderRef ref="analyse_appender" />
+		</logger>
+		<logger name="exceptionLogger" level="DEBUG">
+			<AppenderRef ref="exception_appender" />
+		</logger>
+		<logger name="crawlerLogger" level="DEBUG">
+			<AppenderRef ref="crawler_appender" />
+		</logger>
+		<Root>
+			<AppenderRef ref="Console_appender" level="INFO" />
+		</Root>
+	</Loggers>
+</Configuration>
