@@ -1,6 +1,10 @@
 package com.publiciteweb.webcrawler;
 
 import java.io.IOException;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.HashSet;
 
 import org.jsoup.Jsoup;
@@ -8,63 +12,121 @@ import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 
-public class Engine {
-	
-	HashSet<String> pages = new HashSet<String>();
-	String intialHref;
-	
-	public Engine(){}
+public class Engine
+{
 
-	public Engine(String initalHref)
+	private HashSet<String> pages = new HashSet<String>();
+	private HashSet<String> intialHrefs = new HashSet<String>();
+	private HashSet<Stewart> stewarts = new HashSet<Stewart>();
+	private Statement stmt = null;
+
+	public Engine()
+	{}
+
+	public Engine( String initalHref )
 	{
-		this.intialHref = initalHref;
+		this.intialHrefs.add( initalHref );
 	}
-	
-	public void search(){
-		search(intialHref);
+
+	public Engine( HashSet<String> intialHrefs )
+	{
+		this.intialHrefs = intialHrefs;
+	}
+
+	public void search()
+	{
+		for ( String intialHref : intialHrefs )
+		{
+			search( intialHref );
+		}
 	}
 
 	public void search( String href )
 	{
-		try 
+		try
 		{
-			Document document = Jsoup.connect(href).get();
-			HashSet<String> hyperlinks = getHyperlinks(document);
-			pages.addAll(hyperlinks);
-			for(String hyperlink : pages)
+			Document document = Jsoup.connect( href ).get();
+			if ( document != null )
 			{
-				pages.remove(hyperlink);
-				search(hyperlink);
+				save( href, document.body().toString() );
+				HashSet<String> hyperlinks = getValidHyperlinks( document );
+				if ( hyperlinks != null )
+				{
+					pages.addAll( hyperlinks );
+					for ( String hyperlink : pages )
+					{
+						pages.remove( hyperlink );
+						search( hyperlink );
+					}
+				}
 			}
-		}
-		catch (IOException e)
+		}catch( IOException e )
 		{
-			crawlerLog.exception(e);
+			e.printStackTrace();
 		}
 	}
 
-	public HashSet<String> getHyperlinks(Document document)
+	private HashSet<String> getValidHyperlinks( Document document )
 	{
-		Elements hrefElements = document.select("a[href]");
+		Elements hrefElements = document.select( "a[href]" );
 		HashSet<String> hyperlinks = new HashSet<String>();
-		if( hrefElements != null )
+		if ( hrefElements != null )
 		{
-			for(Element hrefElement : hrefElements )
+			for ( Element hrefElement : hrefElements )
 			{
-				if(!hrefElement.attr("abs:href").isEmpty())
+				String href = hrefElement.attr( "abs:href" );
+				if ( !href.isEmpty() && isValidHyperlink( href ) )
 				{
-					hyperlinks.add(hrefElement.attr("abs:href"));
+					hyperlinks.add( href );
 				}
 			}
 		}
 		return hyperlinks;
 	}
 
-	public static void main(String[] args) 
+	private boolean isValidHyperlink( String hyperlink )
 	{
-		Engine engine = new Engine();
-		engine.search("https://www.kijiji.ca/b-autos-camions/quebec/new__used/c174l9001a49");
-		
-		
+		for ( Stewart stewart : stewarts )
+			if ( stewart.validateURL( hyperlink ) )
+			{
+				return true;
+			}
+		return false;
 	}
+
+	public void addStewarts( Stewart stewart )
+	{
+		stewarts.add( stewart );
+	}
+
+	private void save( String href, String html )
+	{
+		html = html.replaceAll( "\\'", "" );
+		String sqlString = "INSERT INTO htmlscrap (hyperlink, html ) VALUES ('" + href + "', '" + html + "' )";
+		try
+		{
+			if ( stmt == null )
+			{
+				init();
+			}
+			int updateReturn = stmt.executeUpdate( sqlString );
+
+		}catch( SQLException e )
+		{
+			e.printStackTrace();
+		}
+	}
+
+	private void init()
+	{
+		try
+		{
+			Connection conn = DriverManager.getConnection( "jdbc:mysql://localhost/webCrawler?user=root&password=admin&useSSL=false&characterEncoding=UTF-8" );
+			stmt = conn.createStatement();
+		}catch( SQLException e )
+		{
+			e.printStackTrace();
+		}
+	}
+
 }
