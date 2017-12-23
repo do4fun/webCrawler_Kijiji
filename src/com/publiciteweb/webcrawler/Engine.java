@@ -5,7 +5,9 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.Collections;
 import java.util.HashSet;
+import java.util.Set;
 
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
@@ -13,9 +15,9 @@ import org.jsoup.nodes.Element;
 
 public class Engine
 {
-
-	private HashSet<Element> hrefElements = new HashSet<Element>();
+	private Set<Element> hrefElements = Collections.synchronizedSet( new HashSet<Element>() );
 	private HashSet<String> intialHrefs = new HashSet<String>();
+	private HashSet<String> excludeHrefs = new HashSet<String>();
 	private HashSet<Stewart> stewarts = new HashSet<Stewart>();
 	private Statement stmt = null;
 
@@ -48,31 +50,33 @@ public class Engine
 			if ( document != null )
 			{
 				// extract all href element of a document
-				hrefElements.addAll( document.select( "a[href]" ) );
-				if ( !hrefElements.isEmpty() )
+				synchronized( hrefElements )
 				{
-					for ( Element hrefElement : hrefElements )
+					hrefElements.addAll( document.select( "a[href]" ) );
+					if ( !hrefElements.isEmpty() )
 					{
-						// Extract url from of a href element
-						String hyperlink = hrefElement.attr( "abs:href" );
-						if ( hyperlink != null )
+						for ( Element hrefElement : hrefElements )
 						{
-							hrefElements.remove( hrefElement );
-							for ( Stewart stewart : stewarts )
+							// Extract url from of a href element
+							String hyperlink = hrefElement.attr( "abs:href" );
+							if ( hyperlink != null && !excludeHrefs.contains( hyperlink ) )
 							{
-								// If url is a valid
-								if ( stewart.validateURL( hyperlink ) )
+								hrefElements.remove( hrefElement );
+								for ( Stewart stewart : stewarts )
 								{
-									// Save document's body If the url is valid
-									// to scraps
-									if ( stewart.isToScrap() )
+									// If url is a valid
+									if ( stewart.validateURL( hyperlink ) )
 									{
-										save( hyperlink, document.body().toString() );
+										// Save document's body If the url is
+										// valid to scraps
+										if ( stewart.isToScrap() )
+										{
+											save( hyperlink, document.body().toString() );
+										}
 									}
 								}
+								search( hyperlink );
 							}
-
-							search( hyperlink );
 						}
 					}
 				}
@@ -83,17 +87,12 @@ public class Engine
 		}
 	}
 
-	private boolean isValidHyperlink( String hyperlink )
-	{
-		return false;
-	}
-
 	public void addStewarts( Stewart stewart )
 	{
 		stewarts.add( stewart );
 	}
 
-	private void save( String href, String html )
+	private synchronized void save( String href, String html )
 	{
 		html = html.replaceAll( "\\'", "" );
 		String sqlString = "INSERT INTO htmlscrap (hyperlink, html ) VALUES ('" + href + "', '" + html + "' )";
