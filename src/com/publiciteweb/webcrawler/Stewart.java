@@ -4,7 +4,7 @@ public class Stewart
 {
 	private boolean onSpecificPattern = true;
 	private String root, pattern;
-	private boolean stayOnSite = true;
+	private boolean toScrap = false;
 
 	public Stewart()
 	{}
@@ -32,15 +32,9 @@ public class Stewart
 			return false;
 		}
 
-		if ( isStayOnSite() )
+		if ( !href.contains( root ) )
 		{
-			if ( href.contains( root ) )
-			{
-				return true;
-			}else
-			{
-				return false;
-			}
+			return false;
 		}
 
 		return true;
@@ -133,14 +127,14 @@ public class Stewart
 		this.pattern = pattern;
 	}
 
-	public boolean isStayOnSite()
+	public boolean isToScrap()
 	{
-		return stayOnSite;
+		return toScrap;
 	}
 
-	public void setStayOnSite( boolean stayOnSite )
+	public void setToScrap( boolean toScrap )
 	{
-		this.stayOnSite = stayOnSite;
+		this.toScrap = toScrap;
 	}
 
 	public String toString()

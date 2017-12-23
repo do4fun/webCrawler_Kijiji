@@ -10,12 +10,11 @@ import java.util.HashSet;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
-import org.jsoup.select.Elements;
 
 public class Engine
 {
 
-	private HashSet<String> pages = new HashSet<String>();
+	private HashSet<Element> hrefElements = new HashSet<Element>();
 	private HashSet<String> intialHrefs = new HashSet<String>();
 	private HashSet<Stewart> stewarts = new HashSet<Stewart>();
 	private Statement stmt = null;
@@ -41,22 +40,40 @@ public class Engine
 		}
 	}
 
-	public void search( String href )
+	public void search( String hrefDocument )
 	{
 		try
 		{
-			Document document = Jsoup.connect( href ).get();
+			Document document = Jsoup.connect( hrefDocument ).get();
 			if ( document != null )
 			{
-				save( href, document.body().toString() );
-				HashSet<String> hyperlinks = getValidHyperlinks( document );
-				if ( hyperlinks != null )
+				// extract all href element of a document
+				hrefElements.addAll( document.select( "a[href]" ) );
+				if ( !hrefElements.isEmpty() )
 				{
-					pages.addAll( hyperlinks );
-					for ( String hyperlink : pages )
+					for ( Element hrefElement : hrefElements )
 					{
-						pages.remove( hyperlink );
-						search( hyperlink );
+						// Extract url from of a href element
+						String hyperlink = hrefElement.attr( "abs:href" );
+						if ( hyperlink != null )
+						{
+							hrefElements.remove( hrefElement );
+							for ( Stewart stewart : stewarts )
+							{
+								// If url is a valid
+								if ( stewart.validateURL( hyperlink ) )
+								{
+									// Save document's body If the url is valid
+									// to scraps
+									if ( stewart.isToScrap() )
+									{
+										save( hyperlink, document.body().toString() );
+									}
+								}
+							}
+
+							search( hyperlink );
+						}
 					}
 				}
 			}
@@ -66,31 +83,8 @@ public class Engine
 		}
 	}
 
-	private HashSet<String> getValidHyperlinks( Document document )
-	{
-		Elements hrefElements = document.select( "a[href]" );
-		HashSet<String> hyperlinks = new HashSet<String>();
-		if ( hrefElements != null )
-		{
-			for ( Element hrefElement : hrefElements )
-			{
-				String href = hrefElement.attr( "abs:href" );
-				if ( !href.isEmpty() && isValidHyperlink( href ) )
-				{
-					hyperlinks.add( href );
-				}
-			}
-		}
-		return hyperlinks;
-	}
-
 	private boolean isValidHyperlink( String hyperlink )
 	{
-		for ( Stewart stewart : stewarts )
-			if ( stewart.validateURL( hyperlink ) )
-			{
-				return true;
-			}
 		return false;
 	}
 
