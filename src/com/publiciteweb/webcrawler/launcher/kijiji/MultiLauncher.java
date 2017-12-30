@@ -1,4 +1,4 @@
-package com.publiciteweb.webcrawler.kijiji;
+package com.publiciteweb.webcrawler.launcher.kijiji;
 
 import java.util.HashSet;
 import java.util.Set;

@@ -1,4 +1,4 @@
-package com.publiciteweb.webcrawler.kijiji;
+package com.publiciteweb.webcrawler.launcher.kijiji;
 
 import com.publiciteweb.webcrawler.Engine;
 import com.publiciteweb.webcrawler.Stewart;
